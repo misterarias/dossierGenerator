@@ -28,32 +28,49 @@ insert_image() {
   sub "#IMAGE${image_index}_TEXT" "${image_name}" "$index_file"
 }
 
+insert_description() {
+  local description_file=$1
+  local index_file=$2
+  
+  descripcion="$(cat $description_file)"
+  escaped_description="$(echo "${descripcion}" | sed ':a;N;$!ba;s/\n/<br \/>/g' | sed 's/\$/\\$/g')"
+  sub "#DESCRIPTION" "${escaped_description}" "$index_file"
+  
+}
+
 find "$IMAGE_FOLDER"  -type d  -print0 | while IFS= read -r -d '' dir ; do
   if [ "$dir" = "$IMAGE_FOLDER" ] ; then
     continue
   fi
 
+  # Cleanup old HTML
+  find "$dir" -iname "*.html*" -delete
+
   title=$(basename "$dir")
-  INDEX_FILE="$dir/index.html"
-  echo "Generando web para '$title' en '$INDEX_FILE' ... "
+  invalid_folder=0
+  index_file="$(mktemp /tmp/.index.html.XXXXX)"
+  cat "$TEMPLATE_FILE" > "$index_file"
 
   pushd "$dir" > /dev/null
-  cat "$TEMPLATE_FILE" > "$INDEX_FILE"
   find . -type f  -print0 | while IFS= read -r -d '' file ; do
     file_info=$(file "$file")
-    echo "$file_info" | grep -i image && insert_image "$file" "$INDEX_FILE"
+    echo "$file_info" | grep -qi image && insert_image "$file" "$index_file" && continue
+    echo "$file_info" | grep -qi text && insert_description "$file" "$index_file" && continue
+    
+    # Ooops, shouldn't be here
+    echo "Folder contains no valid data" && invalid_folder=1
   done
-  sub "#TITLE" "${title}" "$INDEX_FILE"
 
-  description_file="descripcion.txt"
-  if [ -f $description_file ] ; then
-    descripcion="$(cat $description_file)"
-  else
-    descripcion="ME FALTA DESCRIPCION PARA '$title'"
+  if [ $invalid_folder -eq 1 ] ; then
+    echo "Folder contains no valid data"
+  else 
+    sub "#TITLE" "${title}" "$index_file"
+    
+    final_index_file="$dir/index.html"
+    mv "$index_file" "$final_index_file"
+    echo "Generada web para '$title' en '$final_index_file' ... "
   fi
-  escaped_description="$(echo "${descripcion}" | sed ':a;N;$!ba;s/\n/<br \/>/g' | sed 's/\$/\\$/g')"
-  sub "#DESCRIPTION" "${escaped_description}" "$INDEX_FILE"
+    
   popd > /dev/null
 
-  rm "${INDEX_FILE}.bk"
 done
