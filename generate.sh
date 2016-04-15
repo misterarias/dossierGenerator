@@ -52,13 +52,16 @@ find "$IMAGE_FOLDER"  -type d  -print0 | while IFS= read -r -d '' dir ; do
   cat "$TEMPLATE_FILE" > "$index_file"
 
   pushd "$dir" > /dev/null
+  find . -type f  -name "*.html" -delete
   find . -type f  -print0 | while IFS= read -r -d '' file ; do
+    echo "$file" | grep -qi "~" && continue
+
     file_info=$(file "$file")
     echo "$file_info" | grep -qi image && insert_image "$file" "$index_file" && continue
     echo "$file_info" | grep -qi text && insert_description "$file" "$index_file" && continue
     
     # Ooops, shouldn't be here
-    echo "Folder contains no valid data" && invalid_folder=1
+    echo "Folder contains no valid data: $file" && invalid_folder=1
   done
 
   if [ $invalid_folder -eq 1 ] ; then
