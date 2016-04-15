@@ -32,7 +32,7 @@ insert_description() {
   local description_file=$1
   local index_file=$2
   
-  descripcion="$(cat $description_file)"
+  descripcion="$(cat "$description_file")"
   escaped_description="$(echo "${descripcion}" | sed ':a;N;$!ba;s/\n/<br \/>/g' | sed 's/\$/\\$/g')"
   sub "#DESCRIPTION" "${escaped_description}" "$index_file"
   
