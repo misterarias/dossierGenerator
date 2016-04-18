@@ -22,7 +22,7 @@ insert_image() {
 
   image_src=$(basename "$image")
   image_index=$(echo $image_src | grep -o "^[1-6]")
-  image_name=$(echo $image_src | sed -e 's#^[1-6]\s*##g' -e 's#\.[a-zA-Z]*$##g')
+  image_name=$(echo $image_src | sed -e 's#^[^a-zA-Z]*##g' -e 's#.JPG$##g')
 
   sub "#IMAGE${image_index}_SRC" "${image_src}" "$index_file"
   sub "#IMAGE${image_index}_TEXT" "${image_name}" "$index_file"
@@ -52,8 +52,8 @@ find "$IMAGE_FOLDER"  -type d  -print0 | while IFS= read -r -d '' dir ; do
   cat "$TEMPLATE_FILE" > "$index_file"
 
   pushd "$dir" > /dev/null
-  find . -type f  -name "*.html" -delete
-  find . -type f  -print0 | while IFS= read -r -d '' file ; do
+  find "." -type f  -name "*.html" -delete
+  find "." -type f  -print0 | while IFS= read -r -d '' file ; do
     echo "$file" | grep -qi "~" && continue
 
     file_info=$(file "$file")
@@ -65,15 +65,12 @@ find "$IMAGE_FOLDER"  -type d  -print0 | while IFS= read -r -d '' dir ; do
   done
 
   if [ $invalid_folder -eq 1 ] ; then
-    echo "Folder contains no valid data"
+    echo "Folder contains no valid data: '$dir'"
   else 
     sub "#TITLE" "${title}" "$index_file"
     
     final_index_file="$dir/index.html"
     mv "$index_file" "$final_index_file"
-    echo "Generada web para '$title' en '$final_index_file' ... "
   fi
-    
   popd > /dev/null
-
 done
