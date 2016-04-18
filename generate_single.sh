@@ -62,6 +62,9 @@ process_dir() {
 
 process_image_folder() {
   #find "$IMAGE_FOLDER"  -type d -print0 | while IFS= read -r -d '' dir ; do
+
+  find "$IMAGE_FOLDER" -iname "*.html" -delete
+
   local tmp_file=$(mktemp  /tmp/.tmpdirXXXX)
   IFS=$';'
   find "$IMAGE_FOLDER"  -type d | sort -h > "$tmp_file"
